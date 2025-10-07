@@ -223,6 +223,14 @@ class SocketService {
       return Promise.reject(new Error('Only PDF files are supported'));
     }
 
+    // Validate file size (100MB limit)
+    const maxSize = 100 * 1024 * 1024; // 100MB
+    if (file.size > maxSize) {
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
+      console.error(`File too large: ${fileSizeMB}MB > 100MB`);
+      return Promise.reject(new Error(`File too large. Maximum size is 100MB, got ${fileSizeMB}MB`));
+    }
+
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       

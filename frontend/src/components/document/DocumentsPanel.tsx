@@ -1,5 +1,5 @@
 // src/components/document/DocumentsPanel.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import useStore from '../../store/useStore';
 import { Upload, File } from 'lucide-react';
 import socketService from '../../services/socketService';
@@ -7,13 +7,34 @@ import socketService from '../../services/socketService';
 const DocumentsPanel: React.FC = () => {
   const documents = useStore((state) => state.room?.documents);
   const roomName = useStore((state) => state.room?.name);
+  const [isUploading, setIsUploading] = useState(false);
   // const currentUser = useStore((state) => state.currentUser);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && roomName) {
-      socketService.uploadFile(file, roomName);
+      // Check file size before upload
+      const maxSize = 100 * 1024 * 1024; // 100MB
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
+      
+      if (file.size > maxSize) {
+        alert(`File too large. Maximum size is 100MB, got ${fileSizeMB}MB`);
+        return;
+      }
+      
+      setIsUploading(true);
+      try {
+        await socketService.uploadFile(file, roomName);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        alert(`Upload failed: ${errorMessage}`);
+      } finally {
+        setIsUploading(false);
+      }
     }
+    
+    // Clear the input so the same file can be selected again
+    event.target.value = '';
   };
 
   const handleUploadClick = () => {
@@ -34,13 +55,31 @@ const DocumentsPanel: React.FC = () => {
           className="hidden"
           onChange={handleFileChange}
           accept=".pdf"
+          title="Select PDF file (max 100MB)"
         />
         <button
           onClick={handleUploadClick}
-          className="w-full flex items-center justify-center p-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          disabled={isUploading}
+          className={`w-full flex flex-col items-center justify-center p-2.5 rounded-lg transition-colors ${
+            isUploading 
+              ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+              : 'bg-blue-600 text-white hover:bg-blue-700'
+          }`}
         >
-          <Upload className="w-5 h-5 mr-2" />
-          <span className="font-medium">Upload PDF</span>
+          {isUploading ? (
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+              <span className="font-medium">Uploading...</span>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center">
+                <Upload className="w-5 h-5 mr-2" />
+                <span className="font-medium">Upload PDF</span>
+              </div>
+              <span className="text-xs mt-1 opacity-90">(Max 100MB)</span>
+            </>
+          )}
         </button>
       </div>
 

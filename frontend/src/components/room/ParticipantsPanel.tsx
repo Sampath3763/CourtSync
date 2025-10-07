@@ -58,7 +58,16 @@ const ParticipantsPanel: React.FC = () => {
     console.log('Current user:', currentUser);
     
     if (file && roomName) {
-      console.log('Attempting to upload file:', file.name);
+      // Check file size before upload
+      const maxSize = 100 * 1024 * 1024; // 100MB
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
+      
+      if (file.size > maxSize) {
+        alert(`File too large. Maximum size is 100MB, got ${fileSizeMB}MB`);
+        return;
+      }
+      
+      console.log(`Attempting to upload file: ${file.name} (${fileSizeMB}MB)`);
       setIsUploading(true);
       try {
         const result = await socketService.uploadFile(file, roomName);
@@ -66,8 +75,8 @@ const ParticipantsPanel: React.FC = () => {
         // The room_update event will automatically update the UI
       } catch (error) {
         console.error('Upload failed:', error);
-        // You could add a toast notification here
-        alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        alert(`Upload failed: ${errorMessage}`);
       } finally {
         setIsUploading(false);
       }
@@ -99,11 +108,12 @@ const ParticipantsPanel: React.FC = () => {
           className="hidden"
           onChange={handleFileChange}
           accept=".pdf"
+          title="Select PDF file (max 100MB)"
         />
         <button
           onClick={handleUploadClick}
           disabled={isUploading}
-          className={`w-full flex items-center justify-center p-2 sm:p-2.5 rounded-lg transition-colors text-sm sm:text-base ${
+          className={`w-full flex flex-col items-center justify-center p-2 sm:p-2.5 rounded-lg transition-colors text-sm sm:text-base ${
             isUploading 
               ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
               : 'bg-blue-600 text-white hover:bg-blue-700'
@@ -111,13 +121,18 @@ const ParticipantsPanel: React.FC = () => {
         >
           {isUploading ? (
             <>
-              <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2"></div>
-              <span className="font-medium">Uploading...</span>
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2"></div>
+                <span className="font-medium">Uploading...</span>
+              </div>
             </>
           ) : (
             <>
-              <Upload className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-              <span className="font-medium">Upload PDF</span>
+              <div className="flex items-center">
+                <Upload className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                <span className="font-medium">Upload PDF</span>
+              </div>
+              <span className="text-xs mt-1 opacity-90">(Max 100MB)</span>
             </>
           )}
         </button>

@@ -26,6 +26,7 @@ class Document(db.Model):
     pages = db.Column(db.Integer, nullable=False)
     room_id = db.Column(db.Integer, db.ForeignKey('room.id'), nullable=False)
     uploader_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True) # Can be nullable if uploader leaves
+    uploader_username = db.Column(db.String(100), nullable=False)  # Add the missing field
     
     # Relationships
     uploader = db.relationship('User', backref=db.backref('uploaded_documents', lazy=True), foreign_keys=[uploader_id])

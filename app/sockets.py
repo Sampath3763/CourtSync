@@ -96,8 +96,15 @@ def on_upload(data):
             print(f"Missing required data: {list(data.keys()) if isinstance(data, dict) else 'Invalid data'}")
             return {'error': 'Missing file name or data'}
         
+        # Validate file size (100MB limit)
+        file_size = len(data['file'])
+        max_size = 100 * 1024 * 1024  # 100MB
+        if file_size > max_size:
+            print(f"File too large: {file_size} bytes > {max_size} bytes")
+            return {'error': f'File too large. Maximum size is 100MB, got {file_size / (1024*1024):.1f}MB'}
+        
         filename = secure_filename(data['name'])
-        print(f"Secured filename: {filename}")
+        print(f"Secured filename: {filename}, size: {file_size / (1024*1024):.2f}MB")
         
         # This requires the app context to access app.config
         from flask import current_app
@@ -129,7 +136,13 @@ def on_upload(data):
             return {'error': 'Document already exists'}
         
         # Create new document
-        new_doc = Document(name=filename, pages=num_pages, room_id=user.room.id, uploader_id=user.id)
+        new_doc = Document(
+            name=filename, 
+            pages=num_pages, 
+            room_id=user.room.id, 
+            uploader_id=user.id,
+            uploader_username=user.username
+        )
         db.session.add(new_doc)
         db.session.commit()
         print(f"Document created: {new_doc.id}")
